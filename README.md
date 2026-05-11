@@ -76,7 +76,7 @@ This dashboard serves as a **project portfolio command center** for tracking pro
 
 ### 3. 📋 Reinstatement Policy Holders — Lapse Intelligence Dashboard
 
-> **File:** *(Power BI file not included — screenshot only)*
+> **File:** *(Power BI file not included — screenshot only due to data privacy)*
 
 ![Reinstatement Policy Holders Dashboard](Reinstatement_Policy_Holders_Dashboard.png)
 
