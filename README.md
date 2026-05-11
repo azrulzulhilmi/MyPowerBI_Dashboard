@@ -104,6 +104,9 @@ This dashboard is a **Lapse Intelligence tool for Insurance Group**, designed to
 - The dashboard supports multi-dimensional filtering for deep-dive analysis by state, product, and time period
 - The executive overview is dated **Friday, 3 April 2026**, with data latest as of **10/03/2026**
 
+#### Remarks
+- The value above is all dummy data.
+
 ---
 
 ## 🛠️ Tools & Technologies
