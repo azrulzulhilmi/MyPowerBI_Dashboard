@@ -139,7 +139,7 @@ This dashboard is a **Lapse Intelligence tool for Tokio Marine Insurance Group**
 ## 👤 Author
 
 **Azrul Zulhilmi**  
-📧 [azrulzulhilmi@users.noreply.github.com](mailto:azrulzulhilmi@users.noreply.github.com)  
+📧 [azrulzulhilmi@users.noreply.github.com](mailto:azrulzulhilmi00@gmail.com)  
 🔗 [GitHub Profile](https://github.com/azrulzulhilmi)
 
 ---
