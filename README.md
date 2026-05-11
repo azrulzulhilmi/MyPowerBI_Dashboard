@@ -81,7 +81,7 @@ This dashboard serves as a **project portfolio command center** for tracking pro
 ![Reinstatement Policy Holders Dashboard](Reinstatement_Policy_Holders_Dashboard.png)
 
 #### What It's About
-This dashboard is a **Lapse Intelligence tool for Tokio Marine Insurance Group**, designed to monitor and analyze insurance policy lapses. It provides executives with key performance indicators on lapse premiums, trends over time, and state-level performance — enabling targeted retention strategies.
+This dashboard is a **Lapse Intelligence tool for Insurance Group**, designed to monitor and analyze insurance policy lapses. It provides executives with key performance indicators on lapse premiums, trends over time, and state-level performance — enabling targeted retention strategies.
 
 #### Key Metrics & Visuals
 | Component | Description |
