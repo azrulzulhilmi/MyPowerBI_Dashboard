@@ -111,7 +111,6 @@ The dashboard is powered by a multi-stage machine learning and natural language 
    - *Loss Ratio* & *Tenure Metrics*
 4. **Predictive Machine Learning (XGBoost)**: Trained and calibrated an XGBoost classifier to estimate reinstatement probability. The model underwent cross-validation, threshold tuning, and probability calibration to maximize the F1-score and PR-AUC.
 5. **On-Premise Retrieval-Augmented Generation (RAG)**: Built an on-premise vector database (`data/news_db/`) containing local insurance news, medical inflation reports, and macroeconomic indices. A local LLM (`AIrein` via Ollama) queries this DB to generate 200–250 word, compliance-friendly bulleted explanations explaining *why* a policy is likely to lapse, providing context for agents.
-6. **On-Premise Medical Text Extraction (Gemma 3)**: Implemented a parallelized on-prem NLP extraction pipeline utilizing `gemma3:12B` (and `gpt-oss:12`) via Ollama. It parses raw unstructured free-text policy notes (`POLICY_NOTE`) with zero-hallucination prompts to extract structured columns (`is_healthcare`, `diagnosis`, `exclusion`, `medication`, `action_date`) for underwriting analysis.
 
 #### Key Metrics & Visuals
 | Component | Description |
