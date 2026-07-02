@@ -81,36 +81,64 @@ This dashboard serves as a **project portfolio command center** for tracking pro
 ![Reinstatement Policy Holders Dashboard](Reinstatement_Policy_Holders_Dashboard.png)
 
 #### What It's About
-This dashboard serves as the front-end **Lapse Intelligence tool for Insurance Group**, designed to monitor, forecast, and prevent policy lapses. Behind this dashboard lies a comprehensive, end-to-end data science and AI pipeline that cleans raw demographic data, forecasts macroeconomic indicators, predicts individual policyholder reinstatement probability, and uses an on-premise Large Language Model (LLM) to generate plain-language explanation notes for agents.
+This dashboard serves as the front-end **Lapse Intelligence tool for Tokio Marine Life Insurance (Malaysia) Bhd**, designed to monitor, forecast, and prevent policy lapses. Behind this dashboard lies a comprehensive, end-to-end data science and AI pipeline that cleans raw demographic data, forecasts macroeconomic indicators, predicts individual policyholder reinstatement probability, and uses an on-premise Large Language Model (LLM) to generate plain-language explanation notes for front-line agents.
 
 #### 🧠 Data Science & AI Pipeline Architecture
 The dashboard is powered by a multi-stage machine learning and natural language processing backend structured as follows:
 
 ```
-[Raw Policy Data]
+[Raw Policy CRM Data]
        │
-       ├─► [Postcode Cleaning & KNN Imputation] ──► (Imputes missing districts)
-       ├─► [Macroeconomic Time-Series Models] ───► (CPI & OPR forecasts)
+       ├─► [Postcode Cleaning & Spatial KNN Imputation] ──► (Imputes missing districts)
+       ├─► [Macromonetary Time-Series Models] ───────────► (SARIMA CPI & Holt-Winters OPR forecasts)
        │
-[Feature Engineering] (Affordability Ratio, Premium Burden, Tenure Metrics)
+[Feature Engineering] (Affordability Ratio, Premium Burden Ratio, Sunk Cost Proxy)
        │
-[XGBoost Classifier] ──► (Calibrated probability score for Reinstatement)
+[XGBoost Classifier (SMOTE + ENN)] ──► (Calibrated probability score for Reinstatement)
        │
        ▼
 [Daily Pipeline Scoring] ──► [On-Premise RAG Pipeline (Ollama AIrein)] ──► [Power BI Dashboard]
                                     ▲
                                     │ (Retrieves news context)
-                            [News Vector DB]
+                            [News Vector DB (ChromaDB)]
 ```
 
-1. **Postcode & Demographics Reference Data (KNN)**: Cleaned and standardized Malaysian postcodes using OSM and `pgeocode`. Trained a K-Nearest Neighbors (KNN) model to impute missing districts, state boundaries, latitudes, and longitudes to establish a reliable spatial-demographic baseline.
-2. **Macroeconomic Time-Series Forecasting**: Deployed historical time-series forecasting models on Bank Negara Malaysia (BNM) data to project daily **Consumer Price Index (CPI)** and **Overnight Policy Rate (OPR)** trends to capture inflation and interest rate movements.
-3. **Advanced Feature Engineering**: Merged policyholders' histories with geographic, income, expenditure, and macroeconomic forecasts to engineer highly predictive features:
-   - *Affordability Ratio* (premium cost relative to district-level disposable income)
-   - *Premium Burden* (total premium commitments over time)
-   - *Loss Ratio* & *Tenure Metrics*
-4. **Predictive Machine Learning (XGBoost)**: Trained and calibrated an XGBoost classifier to estimate reinstatement probability. The model underwent cross-validation, threshold tuning, and probability calibration to maximize the F1-score and PR-AUC.
-5. **On-Premise Retrieval-Augmented Generation (RAG)**: Built an on-premise vector database (`data/news_db/`) containing local insurance news, medical inflation reports, and macroeconomic indices. A local LLM (`AIrein` via Ollama) queries this DB to generate 200–250 word, compliance-friendly bulleted explanations explaining *why* a policy is likely to lapse, providing context for agents.
+##### 1. Theoretical Foundations & Hypotheses
+Lapsation and reinstatement behaviors are modeled through three distinct financial hypotheses:
+- **Policy Replacement Hypothesis (PRH)**: Policyholders lapse active policies when better or cheaper market alternatives become available.
+- **Interest Rate Hypothesis (IRH)**: Fluctuations in systemic interest rates alter the opportunity cost of savings components, driving lapses in yield-sensitive products.
+- **Emergency Fund Hypothesis (EFH)**: Personal financial distress forces policyholders to lapse policies as a cash-conservation measure, utilizing them as emergency funds.
+
+##### 2. Demographic & Spatial Enrichment
+- **Spatial Standardization (KNN)**: Cleaned and standardized Malaysian postcodes using OSM and `pgeocode`. Trained a K-Nearest Neighbors (KNN) model on coordinates to impute missing districts, states, latitudes, and longitudes to establish a reliable spatial-demographic baseline.
+- **Socioeconomic Enrichment**: Standardized districts were mapped to e-Statistik Malaysia / Department of Statistics Malaysia (DOSM) data. Piecewise linear interpolation was applied to fill historical gaps in district-level median household income and cost-of-living expenditures.
+- **Occupational Normalization**: Standardized raw occupation fields against the JobStreet Salary Guide and Suruhanjaya Perkhidmatan Awam (SPA) schemes, collapsing titles into four major professional groups.
+
+##### 3. Macromonetary Time-Series Forecasting
+To capture EFH and IRH dynamics, we retrieved historical Bank Negara Malaysia (BNM) indicators and trained time-series models to forecast macroeconomic trends up to December 2026:
+- **Consumer Price Index (CPI)**: Modeled using a **SARIMA(1, 1, 0) x (0, 1, 1, 12)** configuration (RMSE = 0.2008). Projections were upsampled to daily frequency using a forward-fill (ffill) method.
+- **Overnight Policy Rate (OPR)**: Modeled using the **Holt-Winters Exponential Smoothing** method (RMSE = 0.1283), which captures central bank rate steps and plateaus more effectively than standard stochastic models.
+
+##### 4. Advanced Feature Engineering
+Predictors are engineered by combining customer demographics, local socioeconomic baselines, and forecasted macroeconomic trends:
+- *Affordability Ratio*: $\text{Annual Premium} / (\text{Monthly Household Income} \times 12)$ (income portion consumed by the policy).
+- *Premium Burden Per Person*: $\text{Annual Premium} / (\text{Dependents} + 1)$.
+- *Premium Burden Ratio*: $\text{Premium Burden Per Person} / (\text{Median District Expenditure} \times 12)$.
+- *Sunk Cost Proxy (Estimated Total Paid)*: $\text{Months Inforce} \times \text{Premium Amount}$ (captures historical capital investment).
+- *Missed Relative Tenure*: $\text{Months Missed Payment} / \text{Months Inforce}$.
+
+##### 5. Predictive Machine Learning (XGBoost + SMOTE-ENN)
+- **Validation Strategy**: Deployed an **Out-of-Time (OOT)** validation split (Training: 2021-2024; Testing: 2025) to prevent over-optimism and simulate real-world chronological forecasting.
+- **Handling Class Imbalance**: The raw dataset exhibits extreme class imbalance (97.4% lapse vs. 2.6% reinstatement). We applied a hybrid **SMOTE + ENN (Edited Nearest Neighbors)** technique, which synthesizes minority instances (SMOTE) and aggressively cleans noisy, overlapping borderline data points (ENN) to establish a clear decision boundary.
+- **Model Tuning & Calibration**: Trained an **XGBoost Classifier** (PR-AUC = 0.2580) using a Stratified 5-Fold Cross-Validation loop within an `ImbPipeline` to prevent data leakage. Raw outputs were calibrated using **Sigmoid Calibration** (final PR-AUC = 0.2628).
+- **Threshold Optimization (F1-Max)**: Adjusted the operational threshold to **0.0846** to prioritize Recall over Precision due to the high cost of omission (losing a customer vs. making a phone call).
+  - *Recall*: **37.20%** (capturing nearly 40% of all potential premium recovery).
+  - *Precision*: **25.58%** (ensuring approximately 1 in 4 outbound outreach calls results in a successful reinstatement).
+
+##### 6. On-Premise Retrieval-Augmented Generation (RAG)
+To make predictions actionable, scores are fed into a secure local LLM agent (**AIrein** based on a custom `gemma3:12B` Modelfile via Ollama). This setup prevents customer data leakage by executing all inferences locally on on-premise hardware.
+- **Vector Storage**: News reports, bank interest rate changes, and healthcare inflation documents are chunked and stored in a local Chroma DB using `nomic-embed-text` embeddings.
+- **SHAP Translation**: For each high-probability candidate, the system extracts the top three local SHAP feature drivers (e.g., *Affordability*, *Agent Tenure*, *Total Claims*) and translates them into layman terms, combining them with retrieved vector database contexts to generate personalized outreach scripts for agents.
 
 #### Key Metrics & Visuals
 | Component | Description |
@@ -128,7 +156,7 @@ The dashboard is powered by a multi-stage machine learning and natural language 
 | **Navigation** | Sidebar with sections: Overview, Customer, Agency and Product, Others Lapse Driver |
 
 #### Insights
-- **Macroeconomic Correlation**: Lapses show strong statistical correlation with upward movements in the time-series OPR and CPI indexes, pointing to macroeconomic stress as a primary driver.
+- **Macroeconomic Correlation**: Lapses show strong statistical correlation with upward movements in the time-series OPR and CPI indexes, pointing to macroeconomic stress (EFH) as a primary driver.
 - **Geographic Vulnerability**: Negeri Sembilan exhibits the highest average lapse premium, matching areas where the affordability ratio (premium burden relative to district-level disposable income) is elevated.
 - **Lapse Momentum**: Lapse premiums have been trending upward since mid-2024, reaching 3.1K — a **31.45% YoY increase**.
 - **Actionable AI Support**: Embedding the on-prem local RAG explanations in the workflow enables agents to offer context-aware retention support (e.g. suggesting policy adjustment or premium holidays based on the specific driver identified by the LLM).
