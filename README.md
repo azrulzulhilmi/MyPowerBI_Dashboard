@@ -81,7 +81,37 @@ This dashboard serves as a **project portfolio command center** for tracking pro
 ![Reinstatement Policy Holders Dashboard](Reinstatement_Policy_Holders_Dashboard.png)
 
 #### What It's About
-This dashboard is a **Lapse Intelligence tool for Insurance Group**, designed to monitor and analyze insurance policy lapses. It provides executives with key performance indicators on lapse premiums, trends over time, and state-level performance — enabling targeted retention strategies.
+This dashboard serves as the front-end **Lapse Intelligence tool for Insurance Group**, designed to monitor, forecast, and prevent policy lapses. Behind this dashboard lies a comprehensive, end-to-end data science and AI pipeline that cleans raw demographic data, forecasts macroeconomic indicators, predicts individual policyholder reinstatement probability, and uses an on-premise Large Language Model (LLM) to generate plain-language explanation notes for agents.
+
+#### 🧠 Data Science & AI Pipeline Architecture
+The dashboard is powered by a multi-stage machine learning and natural language processing backend structured as follows:
+
+```
+[Raw Policy Data]
+       │
+       ├─► [Postcode Cleaning & KNN Imputation] ──► (Imputes missing districts)
+       ├─► [Macroeconomic Time-Series Models] ───► (CPI & OPR forecasts)
+       │
+[Feature Engineering] (Affordability Ratio, Premium Burden, Tenure Metrics)
+       │
+[XGBoost Classifier] ──► (Calibrated probability score for Reinstatement)
+       │
+       ▼
+[Daily Pipeline Scoring] ──► [On-Premise RAG Pipeline (Ollama AIrein)] ──► [Power BI Dashboard]
+                                    ▲
+                                    │ (Retrieves news context)
+                            [News Vector DB]
+```
+
+1. **Postcode & Demographics Reference Data (KNN)**: Cleaned and standardized Malaysian postcodes using OSM and `pgeocode`. Trained a K-Nearest Neighbors (KNN) model to impute missing districts, state boundaries, latitudes, and longitudes to establish a reliable spatial-demographic baseline.
+2. **Macroeconomic Time-Series Forecasting**: Deployed historical time-series forecasting models on Bank Negara Malaysia (BNM) data to project daily **Consumer Price Index (CPI)** and **Overnight Policy Rate (OPR)** trends to capture inflation and interest rate movements.
+3. **Advanced Feature Engineering**: Merged policyholders' histories with geographic, income, expenditure, and macroeconomic forecasts to engineer highly predictive features:
+   - *Affordability Ratio* (premium cost relative to district-level disposable income)
+   - *Premium Burden* (total premium commitments over time)
+   - *Loss Ratio* & *Tenure Metrics*
+4. **Predictive Machine Learning (XGBoost)**: Trained and calibrated an XGBoost classifier to estimate reinstatement probability. The model underwent cross-validation, threshold tuning, and probability calibration to maximize the F1-score and PR-AUC.
+5. **On-Premise Retrieval-Augmented Generation (RAG)**: Built an on-premise vector database (`data/news_db/`) containing local insurance news, medical inflation reports, and macroeconomic indices. A local LLM (`AIrein` via Ollama) queries this DB to generate 200–250 word, compliance-friendly bulleted explanations explaining *why* a policy is likely to lapse, providing context for agents.
+6. **On-Premise Medical Text Extraction (Gemma 3)**: Implemented a parallelized on-prem NLP extraction pipeline utilizing `gemma3:12B` (and `gpt-oss:12`) via Ollama. It parses raw unstructured free-text policy notes (`POLICY_NOTE`) with zero-hallucination prompts to extract structured columns (`is_healthcare`, `diagnosis`, `exclusion`, `medication`, `action_date`) for underwriting analysis.
 
 #### Key Metrics & Visuals
 | Component | Description |
@@ -99,10 +129,10 @@ This dashboard is a **Lapse Intelligence tool for Insurance Group**, designed to
 | **Navigation** | Sidebar with sections: Overview, Customer, Agency and Product, Others Lapse Driver |
 
 #### Insights
-- Lapse premiums have been trending upward since mid-2024, reaching 3.1K — a **31.45% YoY increase**
-- Negeri Sembilan has the highest average lapse premium, warranting focused retention efforts
-- The dashboard supports multi-dimensional filtering for deep-dive analysis by state, product, and time period
-- The executive overview is dated **Friday, 3 April 2026**, with data latest as of **10/03/2026**
+- **Macroeconomic Correlation**: Lapses show strong statistical correlation with upward movements in the time-series OPR and CPI indexes, pointing to macroeconomic stress as a primary driver.
+- **Geographic Vulnerability**: Negeri Sembilan exhibits the highest average lapse premium, matching areas where the affordability ratio (premium burden relative to district-level disposable income) is elevated.
+- **Lapse Momentum**: Lapse premiums have been trending upward since mid-2024, reaching 3.1K — a **31.45% YoY increase**.
+- **Actionable AI Support**: Embedding the on-prem local RAG explanations in the workflow enables agents to offer context-aware retention support (e.g. suggesting policy adjustment or premium holidays based on the specific driver identified by the LLM).
 
 #### Remarks
 - The value above is all dummy data.
